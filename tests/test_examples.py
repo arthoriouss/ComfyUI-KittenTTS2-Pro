@@ -30,3 +30,16 @@ def test_settings_workflow_widgets_serialization():
         assert values[4] >= 250  # max_new_tokens
         assert 0.3 <= values[7] <= 2.0  # temperature
         assert 0.5 <= values[9] <= 1.0  # top_p
+
+
+def test_clone_workflow_direct_seed_widget_serialization():
+    # As for Generation Settings, ComfyUI adds a 'control after generate' value.
+    for name in ("voice_clone.json", "voice_clone_with_whisper.json"):
+        doc = json.loads((ROOT / "examples" / name).read_text("utf-8"))
+        clones = [node for node in doc["nodes"] if node["type"] == "KittenTTS2Clone"]
+        assert len(clones) == 1
+        values = clones[0]["widgets_values"]
+        assert len(values) == 6
+        assert values[3] == "randomize"
+        assert isinstance(values[4], int)
+        assert values[5] == "fixed"  # ComfyUI seed control; node seed_mode handles randomization.

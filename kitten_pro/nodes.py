@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import secrets
 from pathlib import Path
 
 from .audio import (mono_numpy, resample_mono, to_comfy, trim_edges, peak_normalize,
@@ -251,6 +252,12 @@ class KittenClone:
             "reference_prompt_policy": (["default", "on", "off"], {"default": "default",
                 "tooltip": "Advanced: in-context reference audio may improve identity on longer text; "
                            "can cause repeats/drift on short text. 'default' is safest."}),
+            "seed_mode": (["settings", "fixed", "randomize"], {"default": "settings",
+                "tooltip": "settings: inherit Generation Settings (keeps older workflows unchanged); "
+                           "fixed: use the seed field; randomize: choose a fresh seed every queued run."}),
+            "seed": ("INT", {"default": 17, "min": 0, "max": 2147483647,
+                "tooltip": "Used when seed_mode=fixed. With seed_mode=randomize, the node picks a new seed "
+                           "automatically; leave ComfyUI's 'control after generate' on fixed."}),
             "transcript": ("KITTEN2_TRANSCRIPT",),
             "settings": ("KITTEN2_SETTINGS",),
         }}
@@ -259,21 +266,42 @@ class KittenClone:
     RETURN_NAMES = ("audio", "generation_report")
     FUNCTION = "run"
     CATEGORY = CATEGORY
-    DESCRIPTION = "True in-context voice cloning via reference WAV; requires permission of the voice owner."
+    DESCRIPTION = "True in-context voice cloning via reference WAV, with direct fixed/random seed control. Only clone authorized voices."
+
+    @classmethod
+    def IS_CHANGED(cls, seed_mode="settings", **kwargs):
+        # ComfyUI normally caches graph results when inputs have not changed.
+        # Force a fresh execution on every queued prompt in randomize mode.
+        return float("nan") if seed_mode == "randomize" else seed_mode
 
     def run(self, model, reference, text, reference_text_override="", settings=None, transcript=None,
-            reference_prompt_policy="default"):
+            reference_prompt_policy="default", seed_mode="settings", seed=17):
         # Manual override must be authoritative even when a Whisper output is connected.
         actual_transcript = (reference_text_override or "").strip() or (transcript or "").strip()
-        options = dict(settings or {"normalize": False})
+        options = dict(settings) if settings is not None else {"normalize": False}
         if reference_prompt_policy not in ("default", "on", "off"):
             raise ValueError("reference_prompt_policy must be default, on or off")
         if reference_prompt_policy != "default":
             options["use_reference_prompt"] = reference_prompt_policy == "on"
+        if seed_mode not in ("settings", "fixed", "randomize"):
+            raise ValueError("seed_mode must be settings, fixed or randomize")
+        if seed_mode == "fixed":
+            actual_seed = int(seed)
+            if not 0 <= actual_seed <= 2147483647:
+                raise ValueError("seed must be between 0 and 2147483647")
+        elif seed_mode == "randomize":
+            actual_seed = secrets.randbelow(2147483648)
+        else:
+            actual_seed = (options.get("advanced") or {}).get("seed")
+        if seed_mode != "settings":
+            # Copy nested options: a shared Settings node may feed multiple generators.
+            # Never mutate the settings dictionary owned by an upstream ComfyUI node.
+            options["advanced"] = {**(options.get("advanced") or {}), "seed": actual_seed}
         audio, _, sr, stats = synthesize(model, text, reference=reference,
                                         transcript=actual_transcript,
                                         settings=options)
-        return to_comfy(audio, sr), stats
+        seed_label = str(actual_seed) if actual_seed is not None else "backend-default"
+        return to_comfy(audio, sr), f"{stats} | seed={seed_label} ({seed_mode})"
 
 
 class KittenLongform:

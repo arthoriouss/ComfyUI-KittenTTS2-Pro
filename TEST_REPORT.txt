@@ -1,7 +1,9 @@
-ComfyUI-KittenTTS2-Pro 0.1.3
+ComfyUI-KittenTTS2-Pro 0.1.4
 Offline validation: python -m pytest -q
-33 passed (includes optional librosa pitch fidelity test; skipped in lightweight CI if librosa absent)
+37 passed
 Python compileall: OK
-AUDIO tempo / 24 kHz retention / voice pitch tests: OK
-Seed generation interface: EXISTING (seed + ComfyUI control after generate randomize)
+Voice Clone direct seed modes (settings, fixed, randomize): PASS
+ComfyUI randomize-mode cache invalidation: PASS
+Settings override without mutation: PASS
+Voice clone workflow widget serialization: PASS
 Model weights / RTX 3090 inference: NOT RUN

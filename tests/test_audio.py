@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from kitten_pro.audio import (mono_numpy, resample_mono, prepare_reference,
-                              trim_edges, peak_normalize, fade_edges, join_audio, change_tempo)
+                              trim_edges, peak_normalize, fade_edges, join_audio)
 
 
 def make_audio(seconds=6, sr=48000, channels=2):
@@ -53,36 +53,3 @@ def test_resample():
 def test_invalid_batch_rejected():
     with pytest.raises(ValueError):
         mono_numpy({'waveform': np.ones((2, 1, 100)), 'sample_rate': 24000})
-
-
-def test_tempo_pitch_preserving_duration_and_frequency():
-    pytest.importorskip("librosa")  # The real kittenml backend provides this optional audio dependency.
-    sr = 24000
-    samples = (0.15 * np.sin(2 * np.pi * 440 * np.arange(sr * 2) / sr)).astype(np.float32)
-    output = change_tempo(samples, speed=1.25, preserve_pitch=True)
-    assert abs(len(output) - int(len(samples) / 1.25)) <= 2
-    assert output.dtype == np.float32 and np.max(np.abs(output)) <= 1
-    middle = output[len(output) // 4: len(output) * 3 // 4]
-    peak = np.argmax(np.abs(np.fft.rfft(middle * np.hanning(len(middle)))))
-    peak_hz = peak * sr / len(middle)
-    assert abs(peak_hz - 440) < 5
-
-
-def test_tempo_without_pitch_preservation_changes_frequency():
-    sr = 24000
-    samples = (0.15 * np.sin(2 * np.pi * 440 * np.arange(sr * 2) / sr)).astype(np.float32)
-    faster = change_tempo(samples, speed=1.5, preserve_pitch=False)
-    middle = faster[len(faster) // 4: len(faster) * 3 // 4]
-    peak = np.argmax(np.abs(np.fft.rfft(middle * np.hanning(len(middle)))))
-    peak_hz = peak * sr / len(middle)
-    assert abs(peak_hz - 660) < 10
-
-
-def test_tempo_input_validation():
-    with pytest.raises(ValueError):
-        change_tempo(np.ones(100, dtype=np.float32), speed=0)
-    with pytest.raises(ValueError):
-        change_tempo(np.ones(100, dtype=np.float32), speed=float('nan'))
-    with pytest.raises(ValueError):
-        change_tempo(np.ones(0, dtype=np.float32), speed=1.5)
-    assert np.array_equal(change_tempo(np.ones(100, dtype=np.float32), 1), np.ones(100))

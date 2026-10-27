@@ -7,7 +7,7 @@
 Unofficial, local-first **ComfyUI** node suite for the official **KittenTTS 2 (1.7B)** voice model.
 Built for modular TTS, multilingual voices, **true in-context voice cloning**, beta expressions and long-form chunk generation.
 
-> **Developer preview 0.1.3.** The nodepack has unit tests with a mocked upstream model, but has **not yet been validated against real model weights in this environment**. A compatible `kittenml` release is required. No model weights are bundled.
+> **Developer preview 0.1.4.** The nodepack has unit tests with a mocked upstream model, but has **not yet been validated against real model weights in this environment**. A compatible `kittenml` release is required. No model weights are bundled.
 
 [Documentation française](README_FR.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Responsible use](RESPONSIBLE_USE.md) · [Upstream KittenTTS 2](https://github.com/KittenML/KittenTTS)
 
@@ -180,3 +180,13 @@ Fixed missing `control after generate` serialized field in the Basic TTS and Lon
 KittenTTS 2 exposes no native speech rate control. `advanced.chunk_gap_s` only changes the pauses between chunks. Use **KittenTTS 2 Pro · Audio Speed / Tempo** between generation and Preview Audio, starting at `speed=1.20`, `preserve_pitch=true` (librosa phase vocoder). Preserving pitch can introduce mild audio artifacts; disabling it also raises/lowers pitch. The audio sample rate is not changed.
 
 **Seed is already exposed** in Generation Settings and is honored with `advanced_sampling=false`. Choose ComfyUI's `control after generate = randomize` to automatically try new seeds; choose `fixed` for repeatable tests. Try `examples/faster_french_seed_variations.json` for a working graph.
+
+## Direct Voice Clone seed — v0.1.4
+
+`KittenTTS 2 Pro · Voice Clone` now offers `seed_mode` and `seed` without a separate Generation Settings node:
+
+- `randomize`: generate a fresh seed on every queued prompt; its actual value is included in `generation_report`. A ComfyUI cache invalidation hook ensures the clone reruns.
+- `fixed`: use the explicit integer seed (e.g. 42) for comparable variants.
+- `settings` (backward-compatible default): inherit the Generation Settings seed if connected, otherwise keep upstream KittenML's default.
+
+Optional Generation Settings remain supported. In `fixed` or `randomize` mode, only the seed overrides that upstream settings dictionary. Leave ComfyUI's separate numeric `control after generate` widget on `fixed` when choosing `seed_mode=randomize`; the node generates its own random seed. The example cloning workflows now default to the `randomize` mode.

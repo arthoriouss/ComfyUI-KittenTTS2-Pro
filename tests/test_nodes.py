@@ -141,3 +141,69 @@ def test_tempo_node_preserves_rate_and_seed_control(monkeypatch):
     assert spec['default'] == 17
     assert 'randomize' in spec['tooltip']
     assert 'seed' in KittenSettings().build('stable', False, 12345, 1000, 1.1, False, 1., 0, .95, 0.)[0]['advanced']
+
+
+def test_clone_seed_modes_and_settings_precedence(monkeypatch):
+    import kitten_pro.nodes as nodes
+    from kitten_pro.nodes import KittenClone
+
+    captured = []
+
+    def fake_synthesize(*args, **kwargs):
+        captured.append(kwargs)
+        return np.ones(24000, dtype=np.float32), [], 24000, "test audio"
+
+    monkeypatch.setattr(nodes, "synthesize", fake_synthesize)
+    monkeypatch.setattr(nodes, "to_comfy", lambda audio, rate: {"length": len(audio), "rate": rate})
+    clone = KittenClone()
+    shared = {"normalize": False, "preset": "expressive", "advanced": {"seed": 100, "repetition_penalty": 1.25}}
+    ref = {"reference_text": "Bonjour."}
+
+    # Original workflows keep their Settings seed, without touching their config.
+    _, report = clone.run(None, ref, "Test", settings=shared)
+    assert captured[-1]["settings"]["advanced"]["seed"] == 100
+    assert "seed=100 (settings)" in report
+
+    # An explicit fixed seed overrides only the seed, retaining other settings.
+    _, report = clone.run(None, ref, "Test", settings=shared, seed_mode="fixed", seed=42)
+    opts = captured[-1]["settings"]
+    assert opts["preset"] == "expressive"
+    assert opts["advanced"] == {"seed": 42, "repetition_penalty": 1.25}
+    assert shared["advanced"]["seed"] == 100
+    assert "seed=42 (fixed)" in report
+
+    # Seed control works without a connected Generation Settings node.
+    _, report = clone.run(None, ref, "Test", seed_mode="fixed", seed=123)
+    assert captured[-1]["settings"]["advanced"]["seed"] == 123
+    assert "seed=123 (fixed)" in report
+
+    random_seeds = iter([101, 202])
+    monkeypatch.setattr(nodes.secrets, "randbelow", lambda n: next(random_seeds))
+    first = clone.run(None, ref, "Test", settings=shared, seed_mode="randomize")[1]
+    second = clone.run(None, ref, "Test", settings=shared, seed_mode="randomize")[1]
+    assert "seed=101 (randomize)" in first
+    assert "seed=202 (randomize)" in second
+    assert captured[-1]["settings"]["advanced"]["seed"] == 202
+    assert shared["advanced"]["seed"] == 100
+
+
+def test_clone_random_mode_invalidates_comfy_cache():
+    from kitten_pro.nodes import KittenClone
+    import math
+    assert math.isnan(KittenClone.IS_CHANGED(seed_mode="randomize"))
+    assert KittenClone.IS_CHANGED(seed_mode="fixed") == "fixed"
+    assert KittenClone.IS_CHANGED(seed_mode="settings") == "settings"
+
+
+def test_clone_seed_inputs_and_invalid_modes(monkeypatch):
+    from kitten_pro.nodes import KittenClone
+    inputs = KittenClone.INPUT_TYPES()["optional"]
+    assert inputs["seed_mode"][0] == ["settings", "fixed", "randomize"]
+    assert inputs["seed_mode"][1]["default"] == "settings"
+    assert inputs["seed"][0] == "INT"
+    assert inputs["seed"][1]["max"] == 2147483647
+    node = KittenClone()
+    with pytest.raises(ValueError, match="seed_mode"):
+        node.run(None, {}, "Test", seed_mode="unknown")
+    with pytest.raises(ValueError, match="seed"):
+        node.run(None, {}, "Test", seed_mode="fixed", seed=-1)

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.4 — Direct seed on Voice Clone
+
+- `Voice Clone` now has an optional `seed` (0–2147483647) and `seed_mode`: `settings` (backward-compatible default), `fixed`, or `randomize`.
+- `randomize` uses a fresh seed for each queued graph execution and marks the node changed to bypass ComfyUI result caching; no Generation Settings node needed.
+- `generation_report` includes the actual seed used, making variants reproducible.
+- When `fixed` or `randomize`, only the seed overrides an optional connected Generation Settings node; preset, temperature and other options remain untouched.
+- Updated both Voice Clone example workflows; regression tests cover serialization, seed precedence, randomization and caching.
+- Developer preview, tested with mock KittenML backend only (real model inference still needs RTX 3090 testing).
+
 ## 0.1.3 — Tempo and reproducible seed variations
 
 - Add `KittenTTS 2 Pro · Audio Speed / Tempo` node, 0.50–2.00x with pitch-preserving `librosa` time-stretch (or pitch-changing resampling).

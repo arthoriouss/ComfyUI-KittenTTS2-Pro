@@ -135,7 +135,7 @@
       ],
       "size": [
         360,
-        204
+        310
       ],
       "flags": {},
       "order": 3,
@@ -182,7 +182,10 @@
       "widgets_values": [
         "Bonjour, je suis une voix clonée par Kitten T T S deux.",
         "",
-        "default"
+        "default",
+        "randomize",
+        17,
+        "fixed"
       ]
     },
     {

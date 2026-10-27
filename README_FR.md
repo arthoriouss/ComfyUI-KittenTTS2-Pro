@@ -3,7 +3,7 @@
 Suite de 15 nodes pour **KittenTTS 2** (1,7 milliard de paramètres), avec TTS en français, clonage vocal, expressions et synthèse par morceaux.
 Le code utilise directement le package **`kittenml`**, contrairement aux anciennes intégrations ONNX 0.8.
 
-**Statut : prototype développeur 0.1.3**, testé avec des mocks, **pas encore avec les véritables poids du modèle**.
+**Statut : prototype développeur 0.1.4**, testé avec des mocks, **pas encore avec les véritables poids du modèle**.
 
 ## Installation Windows Portable
 
@@ -81,3 +81,17 @@ Le modèle KittenTTS 2 **ne propose pas de paramètre natif `speed` ou `speaking
 **La seed existe déjà** dans `KittenTTS 2 Pro · Generation Settings` et est transmise dans `advanced.seed` même quand `advanced_sampling = false`. Dans l'interface ComfyUI, réglez `control after generate = randomize` (au lieu de `fixed`) pour obtenir une nouvelle seed à chaque génération ; conservez `fixed` pour une sortie reproductible. `seed` n'est pas un contrôle de vitesse.
 
 Workflow : `examples/faster_french_seed_variations.json`. Le nouveau node ne remplace pas l'apprentissage du modèle et ne garantit pas une qualité égale à l'audio original. Version développeur, sans validation matérielle sur RTX 3090.
+
+## Seed directement dans Voice Clone — 0.1.4
+
+Le node **KittenTTS 2 Pro · Voice Clone** propose désormais `seed` et `seed_mode` sans obligation de connecter `Generation Settings` :
+
+- `seed_mode = randomize` : une **nouvelle seed à chaque Queue Prompt**, même avec les mêmes texte et référence. La sortie `generation_report` affiche `seed=... (randomize)` pour noter une variante appréciée.
+- `seed_mode = fixed` : reproduit la même variante avec la valeur de `seed` (par exemple `42`). La même seed n'implique une sortie identique que si les autres paramètres et le backend sont déterministes.
+- `seed_mode = settings` (valeur par défaut pour ne pas modifier les anciens workflows) : hérite de la seed transmise par `Generation Settings` quand ce node est connecté ; sinon, laisse KittenML choisir sa seed.
+
+Si `Generation Settings` est connecté en mode `fixed` ou `randomize`, **seule sa seed est remplacée** ; le preset, la pénalité de répétition et les autres options restent actives. Les options ne sont jamais modifiées dans le node `Generation Settings` lui-même.
+
+**Attention :** ComfyUI peut afficher un deuxième contrôle `control after generate` sous le widget numérique `seed` : laisse-le sur `fixed` quand `seed_mode=randomize`, puisque notre mode aléatoire génère déjà une seed par exécution. Tu peux aussi choisir `seed_mode=fixed` et faire varier le widget numérique avec `control after generate=randomize` ; pour une seed reproductible, garde ce contrôle sur `fixed`.
+
+Pour les nouveaux tests de clonage, importe `examples/voice_clone.json` ou `examples/voice_clone_with_whisper.json` : les deux sont préréglés avec `seed_mode=randomize`. Si tu conserves ton ancien workflow, choisis explicitement ce mode dans le node après mise à jour et redémarrage de ComfyUI.

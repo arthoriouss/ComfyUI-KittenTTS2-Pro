@@ -3,7 +3,7 @@
 Suite de 14 nodes pour **KittenTTS 2** (1,7 milliard de paramètres), avec TTS en français, clonage vocal, expressions et synthèse par morceaux.
 Le code utilise directement le package **`kittenml`**, contrairement aux anciennes intégrations ONNX 0.8.
 
-**Statut : prototype développeur 0.1.1**, testé avec des mocks, **pas encore avec les véritables poids du modèle**.
+**Statut : prototype développeur 0.1.2**, testé avec des mocks, **pas encore avec les véritables poids du modèle**.
 
 ## Installation Windows Portable
 
@@ -58,4 +58,11 @@ Le node `Transcribe Reference` possède une sortie typée `transcript_for_clone`
 
 ## Important — workflows d'exemple et seed
 
-Les workflows `basic_tts.json` et `longform.json` v0.1.1 incluent `control after generate = fixed` après `seed` dans les valeurs sauvegardées. Les anciens JSON v0.1.0 pouvaient décaler les champs, avec `temperature = 0` ou `top_p = 0` et une erreur **Input out of range**. Réimporter les exemples v0.1.1 ou saisir manuellement `max_new_tokens=1000`, `temperature=1.0`, `top_p=0.95` (même avec `advanced_sampling=false`, ComfyUI valide ces champs).
+Les workflows `basic_tts.json` et `longform.json` v0.1.2 incluent `control after generate = fixed` après `seed` dans les valeurs sauvegardées. Les anciens JSON v0.1.0 pouvaient décaler les champs, avec `temperature = 0` ou `top_p = 0` et une erreur **Input out of range**. Réimporter les exemples v0.1.2 ou saisir manuellement `max_new_tokens=1000`, `temperature=1.0`, `top_p=0.95` (même avec `advanced_sampling=false`, ComfyUI valide ces champs).
+
+## Clonage en français — nouveauté 0.1.2
+
+- **Transcribe Reference** propose désormais `French` (par défaut), `Auto` et `English`. Dans KittenML 0.9.7, Whisper force l'anglais ; le node appelle désormais directement son pipeline chargé pour imposer la langue choisie. Cette API interne pourrait changer dans une future version.
+- `reference_text_override` a maintenant priorité sur la transcription Whisper connectée. Écris-y **les paroles exactes de l'audio de référence conservé**, et non le texte à générer.
+- **Voice Clone** : `reference_prompt_policy=default` recommandé ; compare éventuellement avec `on` si la fidélité est médiocre, surtout sur des phrases longues. Un contexte audio forcé peut provoquer des répétitions sur de courts textes.
+- Référence propre de 10 à 20 secondes, une seule personne ; `packed`, décodeur `default`, normalisation anglaise désactivée. La fidélité n'est pas garantie et les tests avec vrais poids RTX 3090 restent à faire.

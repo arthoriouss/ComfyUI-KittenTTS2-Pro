@@ -82,12 +82,41 @@ def synthesize(spec: ModelSpec, text: str, voice: str = '', reference: dict | No
         return merged, chunks, rate, stats
 
 
-def transcribe(spec: ModelSpec, reference: dict) -> str:
+def transcribe(spec: ModelSpec, reference: dict, language: str = "French") -> str:
+    """Transcribe the prepared reference with an explicit Whisper language policy.
+
+    kittenml 0.9.7's ReferenceTranscriber.__call__ unconditionally forces English.
+    Its lazy ASR pipeline is accessed via _load() to support French and Auto.
+    This private upstream API is isolated here and guarded for future upgrades.
+    """
+    supported = {"French": "french", "English": "english", "Auto": None}
+    if language not in supported:
+        raise ValueError(f"Unknown transcription language {language!r}; choose {list(supported)}")
+
+    from .audio import resample_mono
     with runtime_lock():
         model = get_model(spec)
-        tool = getattr(model, 'transcriber', None)
+        tool = getattr(model, "transcriber", None)
         if not callable(tool):
             raise RuntimeError("Current KittenML backend exposes no 'transcriber'. Supply a manual transcript.")
-        with reference_file(reference) as path:
-            result = tool(path)
-        return str(result).strip()
+        factory = getattr(tool, "_load", None)
+        if not callable(factory):
+            if language == "English":
+                with reference_file(reference) as path:
+                    return str(tool(path)).strip()
+            raise RuntimeError("Installed kittenml version does not expose its Whisper pipeline. "
+                               "Enter an exact French transcript in Voice Clone > reference_text_override, "
+                               "or use kittenml==0.9.7.")
+        raw = np.asarray(reference["samples"], dtype=np.float32).reshape(-1)
+        sr = int(reference.get("sample_rate", 24000))
+        if raw.size < sr:
+            raise ValueError("Reference must contain at least 1 second of audio")
+        samples = resample_mono(raw, sr, 16000)
+        generate_kwargs = {"task": "transcribe"}
+        if supported[language] is not None:
+            generate_kwargs["language"] = supported[language]
+        result = factory()(samples, generate_kwargs=generate_kwargs)
+        transcript = str(result.get("text", "") if isinstance(result, dict) else result).strip()
+        if not transcript:
+            raise ValueError("Whisper returned an empty transcript; check the reference recording")
+        return transcript

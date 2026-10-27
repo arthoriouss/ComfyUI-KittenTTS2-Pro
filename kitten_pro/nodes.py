@@ -132,16 +132,22 @@ class KittenPrepareReference:
 class KittenTranscribe:
     @classmethod
     def INPUT_TYPES(cls):
-        return {"required": {"model": ("KITTEN2_MODEL",), "reference": ("KITTEN2_REFERENCE",)}}
+        return {"required": {
+            "model": ("KITTEN2_MODEL",),
+            "reference": ("KITTEN2_REFERENCE",),
+            "language": (["French", "Auto", "English"], {"default": "French",
+                         "tooltip": "French forces a French transcript. Auto lets Whisper detect the language. "
+                                    "KittenML 0.9.7's built-in transcription otherwise forces English."}),
+        }}
 
     RETURN_TYPES = ("STRING", "KITTEN2_TRANSCRIPT")
     RETURN_NAMES = ("transcript_text", "transcript_for_clone")
     FUNCTION = "run"
     CATEGORY = CATEGORY
-    DESCRIPTION = "Transcribe a voice sample with upstream KittenML Whisper (on demand)."
+    DESCRIPTION = "Transcribe a reference in French, English, or automatic language detection (on demand)."
 
-    def run(self, model, reference):
-        text = transcribe(model, reference)
+    def run(self, model, reference, language="French"):
+        text = transcribe(model, reference, language=language)
         return text, text
 
 
@@ -239,7 +245,11 @@ class KittenClone:
             "reference": ("KITTEN2_REFERENCE",),
             "text": ("STRING", {"default": "Bonjour, ceci est un test de clonage vocal.", "multiline": True}),
         }, "optional": {
-            "reference_text_override": ("STRING", {"default": "", "multiline": True}),
+            "reference_text_override": ("STRING", {"default": "", "multiline": True,
+                "tooltip": "Exact words in reference audio. Takes priority over the connected Whisper transcript."}),
+            "reference_prompt_policy": (["default", "on", "off"], {"default": "default",
+                "tooltip": "Advanced: in-context reference audio may improve identity on longer text; "
+                           "can cause repeats/drift on short text. 'default' is safest."}),
             "transcript": ("KITTEN2_TRANSCRIPT",),
             "settings": ("KITTEN2_SETTINGS",),
         }}
@@ -250,10 +260,18 @@ class KittenClone:
     CATEGORY = CATEGORY
     DESCRIPTION = "True in-context voice cloning via reference WAV; requires permission of the voice owner."
 
-    def run(self, model, reference, text, reference_text_override="", settings=None, transcript=None):
+    def run(self, model, reference, text, reference_text_override="", settings=None, transcript=None,
+            reference_prompt_policy="default"):
+        # Manual override must be authoritative even when a Whisper output is connected.
+        actual_transcript = (reference_text_override or "").strip() or (transcript or "").strip()
+        options = dict(settings or {"normalize": False})
+        if reference_prompt_policy not in ("default", "on", "off"):
+            raise ValueError("reference_prompt_policy must be default, on or off")
+        if reference_prompt_policy != "default":
+            options["use_reference_prompt"] = reference_prompt_policy == "on"
         audio, _, sr, stats = synthesize(model, text, reference=reference,
-                                        transcript=(transcript or reference_text_override),
-                                        settings=settings or {"normalize": False})
+                                        transcript=actual_transcript,
+                                        settings=options)
         return to_comfy(audio, sr), stats
 
 

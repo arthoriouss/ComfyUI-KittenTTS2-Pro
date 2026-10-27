@@ -7,7 +7,7 @@
 Unofficial, local-first **ComfyUI** node suite for the official **KittenTTS 2 (1.7B)** voice model.
 Built for modular TTS, multilingual voices, **true in-context voice cloning**, beta expressions and long-form chunk generation.
 
-> **Developer preview 0.1.1.** The nodepack has unit tests with a mocked upstream model, but has **not yet been validated against real model weights in this environment**. A compatible `kittenml` release is required. No model weights are bundled.
+> **Developer preview 0.1.2.** The nodepack has unit tests with a mocked upstream model, but has **not yet been validated against real model weights in this environment**. A compatible `kittenml` release is required. No model weights are bundled.
 
 [Documentation française](README_FR.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Responsible use](RESPONSIBLE_USE.md) · [Upstream KittenTTS 2](https://github.com/KittenML/KittenTTS)
 
@@ -162,6 +162,13 @@ This is a standalone repository candidate named `ComfyUI-KittenTTS2-Pro` (no wri
 Before publishing to the ComfyUI Registry, set a valid publisher ID in `pyproject.toml`, complete the real GPU test and follow [`docs/COMFY_REGISTRY_TEMPLATE.md`](docs/COMFY_REGISTRY_TEMPLATE.md).
 The dependency installer pins the KittenML API version `kittenml==0.9.7` as its validated **interface target**; change it only after review and testing. This does not imply the actual model generation has been hardware-validated.
 
-## Example workflow seed widget note (0.1.1)
+## Example workflow seed widget note (0.1.2)
 
 Fixed missing `control after generate` serialized field in the Basic TTS and Longform examples. If you imported the old 0.1.0 examples, import the new JSON or manually correct `max_new_tokens`, `temperature`, and `top_p` (ComfyUI validates hidden/unused advanced sampling controls).
+
+## French cloning — 0.1.2
+
+- **Transcribe Reference** now defaults to `French`, with `Auto` and `English` choices. KittenML 0.9.7's internal Whisper call hard-codes English; the node's integration uses its loaded ASR pipeline to force the chosen language. This private upstream API may change in later releases.
+- Manually entered `reference_text_override` now takes priority over any connected Whisper transcription. The text must exactly match what the *reference clip* says, not what you wish to synthesize.
+- The **Voice Clone** node exposes `reference_prompt_policy`: start with `default`, and compare with `on` for longer texts if voice similarity is weak. Enabling the full reference prompt can destabilize short outputs.
+- Use a clean mono reference from one speaker, preferably 10–20 seconds, with `weights=packed`, `decoder=default` and French normalization disabled. No guarantee of increased similarity; tests use mocks and actual GPU validation is still pending.

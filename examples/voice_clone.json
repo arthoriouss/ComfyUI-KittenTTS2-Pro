@@ -120,7 +120,7 @@
         "Node name for S&R": "KittenTTS2PrepareReference"
       },
       "widgets_values": [
-        20.0,
+        20,
         true,
         true,
         ""
@@ -181,7 +181,8 @@
       },
       "widgets_values": [
         "Bonjour, je suis une voix clonée par Kitten T T S deux.",
-        ""
+        "",
+        "default"
       ]
     },
     {

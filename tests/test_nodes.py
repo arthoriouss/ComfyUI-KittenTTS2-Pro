@@ -85,3 +85,40 @@ def test_prepare_reference(monkeypatch):
     # Optional waveform tools also operate on native [B,C,T].
     joined = KittenAudioJoin().join({'waveform': wave, 'sample_rate': 24000}, {'waveform': wave, 'sample_rate': 24000})[0]
     assert joined['waveform'].array.shape[-1] > 144000
+
+def test_clone_manual_transcript_overrides_whisper_and_prompt_policy(monkeypatch):
+    import kitten_pro.nodes as nodes
+    from kitten_pro.nodes import KittenClone
+
+    captured = []
+
+    def fake_synthesize(*args, **kwargs):
+        captured.append(kwargs)
+        return np.ones(24000, dtype=np.float32), [], 24000, 'ok'
+
+    monkeypatch.setattr(nodes, 'synthesize', fake_synthesize)
+    monkeypatch.setattr(nodes, 'to_comfy', lambda x, sr: {'samples': len(x), 'sample_rate': sr})
+    ref = {'reference_text': 'texte du prepare reference'}
+    node = KittenClone()
+    node.run(None, ref, 'nouveau texte', reference_text_override=' bonjour exact ',
+             transcript='Wrong English words', reference_prompt_policy='on')
+    assert captured[-1]['transcript'] == 'bonjour exact'
+    assert captured[-1]['settings']['use_reference_prompt'] is True
+    node.run(None, ref, 'nouveau texte', transcript='Whisper texte', reference_prompt_policy='off')
+    assert captured[-1]['transcript'] == 'Whisper texte'
+    assert captured[-1]['settings']['use_reference_prompt'] is False
+    node.run(None, ref, 'nouveau texte')
+    assert captured[-1]['transcript'] == ''
+    assert 'use_reference_prompt' not in captured[-1]['settings']
+    with pytest.raises(ValueError):
+        node.run(None, ref, 'texte', reference_prompt_policy='invalid')
+
+
+def test_transcribe_node_default_french(monkeypatch):
+    from kitten_pro.nodes import KittenTranscribe
+    calls = []
+    monkeypatch.setattr('kitten_pro.nodes.transcribe',
+                        lambda model, reference, language: calls.append(language) or 'Bonjour')
+    assert KittenTranscribe().run(None, {}) == ('Bonjour', 'Bonjour')
+    assert calls == ['French']
+    assert KittenTranscribe.INPUT_TYPES()['required']['language'][0] == ['French', 'Auto', 'English']

@@ -30,9 +30,25 @@ class DummyKitten:
         yield np.ones(12000, dtype=np.float32) * .05
         yield np.ones(12000, dtype=np.float32) * .05
 
-    def transcriber(self, path):
-        assert Path(path).is_file()
-        return 'Bonjour test'
+    class _Transcriber:
+        def __init__(self):
+            self.calls = []
+
+        def __call__(self, path):
+            assert Path(path).is_file()
+            return 'Bonjour test'
+
+        def _load(self):
+            def pipeline(samples, generate_kwargs):
+                self.calls.append((len(samples), dict(generate_kwargs)))
+                return {'text': 'Bonjour test'}
+            return pipeline
+
+    @property
+    def transcriber(self):
+        if not hasattr(self, '_transcriber'):
+            self._transcriber = self._Transcriber()
+        return self._transcriber
 
 
 @pytest.fixture
@@ -75,6 +91,12 @@ def test_clone_and_temp_cleanup(mocked_kitten):
     assert kwargs['reference_text'] == 'Bonjour original'
     assert not Path(kwargs['reference']).exists()
     assert transcribe(ModelSpec(), ref) == 'Bonjour test'
+    tool = get_model(ModelSpec()).transcriber
+    assert tool.calls[-1] == (16000 * 6, {'task': 'transcribe', 'language': 'french'})
+    assert transcribe(ModelSpec(), ref, language='Auto') == 'Bonjour test'
+    assert tool.calls[-1] == (16000 * 6, {'task': 'transcribe'})
+    assert transcribe(ModelSpec(), ref, language='English') == 'Bonjour test'
+    assert tool.calls[-1] == (16000 * 6, {'task': 'transcribe', 'language': 'english'})
 
 
 def test_longform_chunks(mocked_kitten):
@@ -100,3 +122,7 @@ def test_unknown_setting_rejected():
 
 def test_no_voices_downloaded_on_import(mocked_kitten):
     assert DummyKitten.started == 0
+
+def test_reject_invalid_transcription_language(mocked_kitten):
+    with pytest.raises(ValueError, match='Unknown transcription language'):
+        transcribe(ModelSpec(), {'samples': np.ones(24000), 'sample_rate': 24000}, language='xx')

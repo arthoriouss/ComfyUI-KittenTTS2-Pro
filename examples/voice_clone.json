@@ -120,7 +120,7 @@
         "Node name for S&R": "KittenTTS2PrepareReference"
       },
       "widgets_values": [
-        20,
+        20.0,
         true,
         true,
         ""

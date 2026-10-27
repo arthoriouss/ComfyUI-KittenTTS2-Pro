@@ -7,3 +7,5 @@
 
 Drop JSON onto ComfyUI canvas. Re-select WAV in the clone example before queuing.
 Widget values and node signatures can change with future ComfyUI versions; if inputs display as disconnected, rebuild the links using the same diagram in README.md.
+
+- `faster_french_seed_variations.json`: French TTS → pitch-preserving 1.2× tempo → Preview Audio; seed auto-randomized after each queued generation.

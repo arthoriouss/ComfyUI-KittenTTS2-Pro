@@ -123,6 +123,7 @@ def test_unknown_setting_rejected():
 def test_no_voices_downloaded_on_import(mocked_kitten):
     assert DummyKitten.started == 0
 
+
 def test_reject_invalid_transcription_language(mocked_kitten):
     with pytest.raises(ValueError, match='Unknown transcription language'):
         transcribe(ModelSpec(), {'samples': np.ones(24000), 'sample_rate': 24000}, language='xx')

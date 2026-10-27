@@ -5,7 +5,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from .audio import (mono_numpy, resample_mono, to_comfy, trim_edges, peak_normalize,
-                    fade_edges, join_audio, prepare_reference)
+                    fade_edges, join_audio, prepare_reference, change_tempo)
 from .runtime import ModelSpec, MODEL_REPO, get_model, unload_models, runtime_lock, check_installed
 from .synthesis import synthesize, transcribe
 
@@ -185,7 +185,8 @@ class KittenSettings:
             "preset": (["stable", "expressive"], {"default": "stable"}),
             "normalize_english_text": ("BOOLEAN", {"default": False,
                                                       "tooltip": "False for French and other non-English languages; upstream normalizer is English-only."}),
-            "seed": ("INT", {"default": 17, "min": 0, "max": 2147483647}),
+            "seed": ("INT", {"default": 17, "min": 0, "max": 2147483647,
+                             "tooltip": "Use control after generate → randomize in ComfyUI to explore new voice variants; this seed is passed even when advanced_sampling=false."}),
             "max_new_tokens": ("INT", {"default": 1000, "min": 250, "max": 3000, "step": 50}),
             "repetition_penalty": ("FLOAT", {"default": 1.1, "min": 1.0, "max": 2.0, "step": 0.05}),
             "advanced_sampling": ("BOOLEAN", {"default": False}),
@@ -326,6 +327,33 @@ class KittenAudioPolish:
         return (to_comfy(samples, sr),)
 
 
+class KittenAudioTempo:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {
+            "audio": ("AUDIO",),
+            "speed": ("FLOAT", {"default": 1.2, "min": 0.5, "max": 2.0, "step": 0.05,
+                                "tooltip": "Speech duration control: 1.20x is 20% faster. Does not affect KittenML sampling."}),
+            "preserve_pitch": ("BOOLEAN", {"default": True,
+                                          "tooltip": "Keep the same voice pitch with a phase vocoder (librosa). Uncheck for faster chipmunk-like pitch changes."}),
+        }}
+
+    RETURN_TYPES = ("AUDIO", "STRING")
+    RETURN_NAMES = ("audio", "tempo_report")
+    FUNCTION = "apply"
+    CATEGORY = CATEGORY
+    DESCRIPTION = "Change audio playback tempo after TTS without changing 24 kHz sample-rate metadata. 1.15–1.25x recommended."
+
+    def apply(self, audio, speed=1.2, preserve_pitch=True):
+        samples, sample_rate = mono_numpy(audio)
+        output = change_tempo(samples, speed=speed, preserve_pitch=preserve_pitch)
+        original_seconds = len(samples) / sample_rate
+        final_seconds = len(output) / sample_rate
+        report = (f"KittenTTS 2 tempo {speed:.2f}x | pitch preserved: {bool(preserve_pitch)} | "
+                  f"{original_seconds:.2f}s → {final_seconds:.2f}s | {sample_rate} Hz")
+        return to_comfy(output, sample_rate), report
+
+
 class KittenAudioJoin:
     @classmethod
     def INPUT_TYPES(cls):
@@ -405,6 +433,7 @@ NODES = [
     ("KittenTTS2Clone", "KittenTTS 2 Pro · Voice Clone", KittenClone),
     ("KittenTTS2Longform", "KittenTTS 2 Pro · Longform Chunks", KittenLongform),
     ("KittenTTS2AudioPolish", "KittenTTS 2 Pro · Polish Audio", KittenAudioPolish),
+    ("KittenTTS2AudioTempo", "KittenTTS 2 Pro · Audio Speed / Tempo", KittenAudioTempo),
     ("KittenTTS2AudioJoin", "KittenTTS 2 Pro · Join Audio", KittenAudioJoin),
     ("KittenTTS2Diagnostics", "KittenTTS 2 Pro · Diagnostics", KittenDiagnostics),
     ("KittenTTS2FreeMemory", "KittenTTS 2 Pro · Free Memory", KittenFreeMemory),

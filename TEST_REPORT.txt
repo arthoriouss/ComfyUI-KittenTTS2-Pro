@@ -1,7 +1,7 @@
-ComfyUI-KittenTTS2-Pro 0.1.2
+ComfyUI-KittenTTS2-Pro 0.1.3
 Offline validation: python -m pytest -q
-29 passed
+33 passed (includes optional librosa pitch fidelity test; skipped in lightweight CI if librosa absent)
 Python compileall: OK
-French/Auto/English ASR adapter with synthetic tests: OK
-Manual transcript precedence: OK
+AUDIO tempo / 24 kHz retention / voice pitch tests: OK
+Seed generation interface: EXISTING (seed + ComfyUI control after generate randomize)
 Model weights / RTX 3090 inference: NOT RUN

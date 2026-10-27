@@ -7,7 +7,7 @@
 Unofficial, local-first **ComfyUI** node suite for the official **KittenTTS 2 (1.7B)** voice model.
 Built for modular TTS, multilingual voices, **true in-context voice cloning**, beta expressions and long-form chunk generation.
 
-> **Developer preview 0.1.2.** The nodepack has unit tests with a mocked upstream model, but has **not yet been validated against real model weights in this environment**. A compatible `kittenml` release is required. No model weights are bundled.
+> **Developer preview 0.1.3.** The nodepack has unit tests with a mocked upstream model, but has **not yet been validated against real model weights in this environment**. A compatible `kittenml` release is required. No model weights are bundled.
 
 [Documentation française](README_FR.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Responsible use](RESPONSIBLE_USE.md) · [Upstream KittenTTS 2](https://github.com/KittenML/KittenTTS)
 
@@ -25,7 +25,7 @@ Built for modular TTS, multilingual voices, **true in-context voice cloning**, b
 - Safe Windows Portable installer that protects ComfyUI's **existing torch/torchaudio builds**.
 - Pytest/CI with mock model tests and example ComfyUI workflows.
 
-## 14 nodes
+## 15 nodes
 
 | Node | Function |
 |---|---|
@@ -33,13 +33,14 @@ Built for modular TTS, multilingual voices, **true in-context voice cloning**, b
 | **Choose Voice** | Preset voice + optional exact name. |
 | **List Voices** | Query all voices available in the loaded model. |
 | **Prepare Reference** | Input AUDIO → 24 kHz mono / trim / peak normalize / max 5–30s / text. |
-| **Transcribe Reference** | Upstream Whisper transcription using the current model; a typed `KITTEN2_TRANSCRIPT` output plugs into Voice Clone. |
+| **Transcribe Reference** | Whisper transcription with French/Auto/English language selection; a typed `KITTEN2_TRANSCRIPT` output plugs into Voice Clone. |
 | **Expression Tags** | Emotion, vocal event and emphasized phrase. |
 | **Generation Settings** | Reusable presets and official sampling controls. |
 | **Generate TTS** | Named-voice speech synthesis. |
 | **Voice Clone** | In-context cloning via a recording, with optional typed Whisper transcript or manual override. |
 | **Longform Chunks** | `generate_stream` → joined output and chunk list. |
 | **Polish Audio** | Trim, target peak, fades. |
+| **Audio Speed / Tempo** | Adjust speech duration after synthesis; optionally preserve voice pitch. |
 | **Join Audio** | Join two clips with a gap or crossfade (resample as needed). |
 | **Diagnostics** | Environment / CUDA VRAM report without loading a model. |
 | **Free Memory** | Discard cache and empty Kitten-model allocations. |
@@ -110,6 +111,14 @@ KittenTTS2 Load Model ──► KittenTTS2 Longform Chunks ──► Preview Aud
 
 Load example JSON files from [`examples/`](examples/). The `voice_clone.json` and `voice_clone_with_whisper.json` workflows require selecting your own short recording in **Load Audio**. The latter transcribes first and passes a typed transcript to Voice Clone.
 
+
+## French voice cloning and Whisper language (0.1.2)
+
+- KittenML 0.9.7 forces `language="en"` inside its default Whisper transcriber. **Transcribe Reference** now offers **French** (default), **Auto**, or **English**, using its lazily loaded ASR pipeline. The private `_load()` compatibility boundary is isolated and checked; a future upstream version may require an update.
+- **Voice Clone** now prioritizes manually entered `reference_text_override` over a connected transcript. Always transcribe the *reference recording only*, not the text you intend to synthesize; match any trimming/clipping in Prepare Reference.
+- Compare `reference_prompt_policy=default` and `on` for speaker similarity; upstream reports that full in-context audio can help long text but destabilize short text. Do not promise better identity for every speaker.
+- Use a clean 10–20 second recording of a single speaker; choose `packed` weights, `default` decoder and `normalize_english_text=false` for French output.
+
 ## IMPORTANT: what streaming means here
 
 The official `generate_stream()` yields **completed sentence-sized audio chunks**, not individual codec tokens; short text can produce one chunk. In ComfyUI the graph must finish its node before downstream audio preview, so this is **not real-time microphone-to-speaker conversational streaming**. The raw chunks output is a ComfyUI mapped-list convenience, not live playback. The joined result uses a 120 ms pause and does **not** promise bit-identical joins versus upstream `generate()`.
@@ -166,9 +175,8 @@ The dependency installer pins the KittenML API version `kittenml==0.9.7` as its 
 
 Fixed missing `control after generate` serialized field in the Basic TTS and Longform examples. If you imported the old 0.1.0 examples, import the new JSON or manually correct `max_new_tokens`, `temperature`, and `top_p` (ComfyUI validates hidden/unused advanced sampling controls).
 
-## French cloning — 0.1.2
+## Speech tempo and seed variations — 0.1.3
 
-- **Transcribe Reference** now defaults to `French`, with `Auto` and `English` choices. KittenML 0.9.7's internal Whisper call hard-codes English; the node's integration uses its loaded ASR pipeline to force the chosen language. This private upstream API may change in later releases.
-- Manually entered `reference_text_override` now takes priority over any connected Whisper transcription. The text must exactly match what the *reference clip* says, not what you wish to synthesize.
-- The **Voice Clone** node exposes `reference_prompt_policy`: start with `default`, and compare with `on` for longer texts if voice similarity is weak. Enabling the full reference prompt can destabilize short outputs.
-- Use a clean mono reference from one speaker, preferably 10–20 seconds, with `weights=packed`, `decoder=default` and French normalization disabled. No guarantee of increased similarity; tests use mocks and actual GPU validation is still pending.
+KittenTTS 2 exposes no native speech rate control. `advanced.chunk_gap_s` only changes the pauses between chunks. Use **KittenTTS 2 Pro · Audio Speed / Tempo** between generation and Preview Audio, starting at `speed=1.20`, `preserve_pitch=true` (librosa phase vocoder). Preserving pitch can introduce mild audio artifacts; disabling it also raises/lowers pitch. The audio sample rate is not changed.
+
+**Seed is already exposed** in Generation Settings and is honored with `advanced_sampling=false`. Choose ComfyUI's `control after generate = randomize` to automatically try new seeds; choose `fixed` for repeatable tests. Try `examples/faster_french_seed_variations.json` for a working graph.

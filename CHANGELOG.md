@@ -1,12 +1,20 @@
 # Changelog
 
-## 0.1.2 — French cloning and transcription correction
+## 0.1.3 — Tempo and reproducible seed variations
 
-- Force French transcription by default in Transcribe Reference instead of upstream KittenML 0.9.7's hard-coded English; allow Auto and English.
-- Manual reference_text_override now has priority over a connected Whisper transcript.
-- Reference prompt policy can be tested as default, on or off for voice fidelity; the upstream default remains safest.
-- Cloning workflows updated with French defaults.
-- 29 mocked tests passing; real RTX 3090 voice similarity has not yet been validated.
+- Add `KittenTTS 2 Pro · Audio Speed / Tempo` node, 0.50–2.00x with pitch-preserving `librosa` time-stretch (or pitch-changing resampling).
+- Add `examples/faster_french_seed_variations.json` with `1.20x` and ComfyUI `control after generate = randomize`.
+- Make the Generation Settings seed's tooltip explicit: it already works with advanced sampling disabled.
+- Native KittenML 2 has no global speech-rate argument; `chunk_gap_s` only changes between-chunk pauses.
+- Tests include pitch/duration checks, node registration, workflow connectivity; still no actual GPU voice-quality validation.
+
+## 0.1.2 — French cloning and transcription fidelity
+
+- Force French transcription by default in Transcribe Reference instead of KittenML 0.9.7\'s hard-coded English; allow Auto and English.
+- Give manual `reference_text_override` priority over connected Whisper transcript.
+- Expose reference prompt policy as an optional controlled experiment (`default`/`on`/`off`) for speaker similarity.
+- Update cloning examples, docs, and tests.
+- Still a developer preview, not hardware-validated.
 
 ## 0.1.1 — ComfyUI workflow widget serialization fix
 

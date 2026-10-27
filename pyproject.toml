@@ -1,6 +1,6 @@
 [project]
 name = "ComfyUI-KittenTTS2-Pro"
-version = "0.1.2"
+version = "0.1.3"
 description = "Native KittenTTS 2 Pro nodes for ComfyUI — expressive TTS, voice cloning and chunked synthesis"
 readme = "README.md"
 requires-python = ">=3.10,<3.14"

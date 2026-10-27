@@ -16,7 +16,7 @@ def test_registration_without_comfy():
     pack = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = pack
     spec.loader.exec_module(pack)
-    assert len(pack.NODE_CLASS_MAPPINGS) == 14
+    assert len(pack.NODE_CLASS_MAPPINGS) == 15
     assert not pack.REGISTRATION_ERRORS
     assert all(cls.FUNCTION in cls.__dict__ for _, _, cls in NODES)
 
@@ -86,6 +86,7 @@ def test_prepare_reference(monkeypatch):
     joined = KittenAudioJoin().join({'waveform': wave, 'sample_rate': 24000}, {'waveform': wave, 'sample_rate': 24000})[0]
     assert joined['waveform'].array.shape[-1] > 144000
 
+
 def test_clone_manual_transcript_overrides_whisper_and_prompt_policy(monkeypatch):
     import kitten_pro.nodes as nodes
     from kitten_pro.nodes import KittenClone
@@ -122,3 +123,21 @@ def test_transcribe_node_default_french(monkeypatch):
     assert KittenTranscribe().run(None, {}) == ('Bonjour', 'Bonjour')
     assert calls == ['French']
     assert KittenTranscribe.INPUT_TYPES()['required']['language'][0] == ['French', 'Auto', 'English']
+
+
+def test_tempo_node_preserves_rate_and_seed_control(monkeypatch):
+    import kitten_pro.nodes as nodes
+    from kitten_pro.nodes import KittenAudioTempo
+    monkeypatch.setattr(nodes, 'to_comfy', lambda samples, rate: {'waveform': samples.reshape(1, 1, -1), 'sample_rate': rate})
+
+    sr = 24000
+    x = 0.1 * np.sin(2 * np.pi * 230 * np.arange(sr, dtype=np.float32) / sr)
+    audio = {'waveform': x.reshape(1, 1, -1), 'sample_rate': sr}
+    output, report = KittenAudioTempo().apply(audio, speed=1.25, preserve_pitch=False)
+    assert output['sample_rate'] == sr
+    assert abs(output['waveform'].shape[-1] - int(sr / 1.25)) <= 2
+    assert '1.25x' in report
+    spec = KittenSettings.INPUT_TYPES()['required']['seed'][1]
+    assert spec['default'] == 17
+    assert 'randomize' in spec['tooltip']
+    assert 'seed' in KittenSettings().build('stable', False, 12345, 1000, 1.1, False, 1., 0, .95, 0.)[0]['advanced']

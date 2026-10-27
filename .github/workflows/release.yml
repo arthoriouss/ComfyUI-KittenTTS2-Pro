@@ -1,0 +1,39 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pytest -q
+      - name: Package source without bundled weights
+        run: |
+          mkdir -p dist
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          root = Path.cwd()
+          allowed = {'.py', '.md', '.toml', '.txt', '.bat', '.sh', '.yml', '.yaml', '.json'}
+          with ZipFile(root/'dist'/'ComfyUI-KittenTTS2-Pro.zip', 'w', ZIP_DEFLATED) as z:
+              for path in sorted(root.rglob('*')):
+                  relative = path.relative_to(root)
+                  if path.is_file() and not any(p in {'.git', '.venv', '.pytest_cache', '__pycache__', 'dist'} for p in relative.parts):
+                      if path.name == 'LICENSE' or path.suffix in allowed or path.name.startswith('.'):
+                          z.write(path, 'ComfyUI-KittenTTS2-Pro/' + relative.as_posix())
+          PY
+          sha256sum dist/ComfyUI-KittenTTS2-Pro.zip > dist/ComfyUI-KittenTTS2-Pro.zip.sha256
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/ComfyUI-KittenTTS2-Pro.zip
+            dist/ComfyUI-KittenTTS2-Pro.zip.sha256
+          generate_release_notes: true

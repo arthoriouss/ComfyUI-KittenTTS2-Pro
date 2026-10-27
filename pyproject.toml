@@ -1,0 +1,24 @@
+[project]
+name = "ComfyUI-KittenTTS2-Pro"
+version = "0.1.1"
+description = "Native KittenTTS 2 Pro nodes for ComfyUI — expressive TTS, voice cloning and chunked synthesis"
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+license = {file = "LICENSE"}
+authors = [{name = "ComfyUI-KittenTTS2-Pro contributors"}]
+keywords = ["ComfyUI", "KittenTTS", "TTS", "voice-cloning", "audio", "French"]
+classifiers = ["Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Topic :: Multimedia :: Sound/Audio :: Speech"]
+# Explicit dependency installation is intentional to preserve existing Torch/CUDA builds.
+dependencies = ["numpy", "scipy", "soundfile"]
+
+[project.urls]
+Upstream = "https://github.com/KittenML/KittenTTS"
+Documentation = "https://github.com/KittenML/KittenTTS/blob/main/docs/api.md"
+
+[tool.comfy]
+PublisherId = "replace-with-your-comfy-publisher-id"
+DisplayName = "KittenTTS 2 Pro"
+Icon = "https://raw.githubusercontent.com/KittenML/KittenTTS/main/assets/kitten_tts_2_announcement.png"
+
+[tool.ruff]
+line-length = 120

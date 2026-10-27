@@ -1,0 +1,8 @@
+{
+  "nodes": [
+    "KittenTTS2ModelLoader", "KittenTTS2VoicePicker", "KittenTTS2ListVoices",
+    "KittenTTS2PrepareReference", "KittenTTS2Transcribe", "KittenTTS2Expression",
+    "KittenTTS2Settings", "KittenTTS2Generate", "KittenTTS2Clone", "KittenTTS2Longform",
+    "KittenTTS2AudioPolish", "KittenTTS2AudioJoin", "KittenTTS2Diagnostics", "KittenTTS2FreeMemory"
+  ]
+}

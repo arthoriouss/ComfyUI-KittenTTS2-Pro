@@ -1,0 +1,224 @@
+{
+  "last_node_id": 4,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "KittenTTS2ModelLoader",
+      "pos": [
+        20,
+        80
+      ],
+      "size": [
+        360,
+        344
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "KITTEN2_MODEL",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KittenTTS2ModelLoader"
+      },
+      "widgets_values": [
+        "cuda",
+        "packed",
+        "default",
+        "pytorch",
+        true,
+        "KittenML/kitten-tts-2",
+        "",
+        0.5
+      ]
+    },
+    {
+      "id": 2,
+      "type": "KittenTTS2Settings",
+      "pos": [
+        30,
+        440
+      ],
+      "size": [
+        360,
+        400
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "settings",
+          "type": "KITTEN2_SETTINGS",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KittenTTS2Settings"
+      },
+      "widgets_values": [
+        "stable",
+        false,
+        17,
+        "fixed",
+        1000,
+        1.1,
+        false,
+        1.0,
+        0,
+        0.95,
+        0.0
+      ]
+    },
+    {
+      "id": 3,
+      "type": "KittenTTS2Longform",
+      "pos": [
+        500,
+        100
+      ],
+      "size": [
+        360,
+        232
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "KITTEN2_MODEL",
+          "link": 1
+        },
+        {
+          "name": "voice",
+          "type": "KITTEN2_VOICE",
+          "link": null
+        },
+        {
+          "name": "reference",
+          "type": "KITTEN2_REFERENCE",
+          "link": null
+        },
+        {
+          "name": "settings",
+          "type": "KITTEN2_SETTINGS",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "joined_audio",
+          "type": "AUDIO",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "raw_chunks_list",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "generation_report",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KittenTTS2Longform"
+      },
+      "widgets_values": [
+        "Bienvenue à cette démonstration. Voici une autre phrase. J'espère que la synthèse est claire et naturelle. Une dernière phrase pour terminer.",
+        "French"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "PreviewAudio",
+      "pos": [
+        1000,
+        180
+      ],
+      "size": [
+        360,
+        148
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PreviewAudio"
+      },
+      "widgets_values": []
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      3,
+      0,
+      "KITTEN2_MODEL"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      3,
+      "KITTEN2_SETTINGS"
+    ],
+    [
+      3,
+      3,
+      0,
+      4,
+      0,
+      "AUDIO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8,
+      "offset": [
+        200,
+        130
+      ]
+    }
+  },
+  "version": 0.4
+}

@@ -1,0 +1,7 @@
+# Safe lightweight dependencies used by the nodepack itself.
+# The heavyweight KittenML 2 backend is installed explicitly by install_portable_windows.bat
+# or scripts/install_backend.py to preserve ComfyUI's existing CUDA Torch and torchaudio builds.
+# Do not install kittenml directly from ComfyUI Manager without checking its Torch dependencies.
+numpy
+scipy
+soundfile

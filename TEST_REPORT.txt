@@ -1,0 +1,6 @@
+ComfyUI-KittenTTS2-Pro 0.1.1
+Offline validation: python -m pytest -q
+26 passed in 5.48s
+Python compileall: OK
+Workflow settings seed widget regression: OK
+Model weights / RTX 3090 inference: NOT RUN (requires local GPU and model download)

@@ -1,0 +1,4 @@
+tests/
+docs/
+.github/
+__pycache__/
